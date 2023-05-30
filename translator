@@ -1,0 +1,34 @@
+#!.venv/bin/python
+
+import polib
+import typer
+import rich
+
+from googletranslatepy import Translator
+from progress.bar import PixelBar
+
+cli = typer.Typer()
+
+def translate_entry(translator: Translator, msgid: str, msgstr: str):
+    if len(msgstr) == 0:
+        return translator.translate(msgid)
+    else:
+        return translator.translate(msgstr)
+
+@cli.command(help="Translate gettext")
+def translate_cmd(po_filepath_in: str, po_filepath_out: str, lang: str = 'ru'):
+    translator = Translator(target=lang)
+    po = polib.pofile(po_filepath_in)
+
+    bar = PixelBar("Translate", color="green", max=len(po), suffix='%(index)d/%(max)d messages, (%(percent).1f%% - ETA %(eta)ds)')
+    for entry in po:
+        bar.next()
+        entry.msgstr = translate_entry(translator, entry.msgid, entry.msgstr)
+
+    po.metadata["Language"] = lang
+    po.save(po_filepath_out)
+
+    rich.print(f"\n[bold green]Translation finished successfully[/bold green] (saved in \"{po_filepath_out}\")")
+
+if __name__ == "__main__":
+    cli()
