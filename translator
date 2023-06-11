@@ -1,34 +1,35 @@
 #!.venv/bin/python
 
-import polib
 import typer
-import rich
 
-from googletranslatepy import Translator
-from progress.bar import PixelBar
+from src import translate_all
+from typing_extensions import Annotated
 
 cli = typer.Typer()
 
-def translate_entry(translator: Translator, msgid: str, msgstr: str):
-    if len(msgstr) == 0:
-        return translator.translate(msgid)
-    else:
-        return translator.translate(msgstr)
+@cli.command(help="Translate *.po file using gettext")
+def po(
+    filepath_in: Annotated[str, typer.Argument(help='gettex input filename *.po for translate')],
+    filepath_out: Annotated[str, typer.Argument(help='gettex output filename *.po for translation results')],
+    lang: Annotated[str, typer.Argument(help='target translate language')] = 'ru',
+):
+    translate_all.translate_po(filepath_in, filepath_out, lang)
 
-@cli.command(help="Translate gettext")
-def translate_cmd(po_filepath_in: str, po_filepath_out: str, lang: str = 'ru'):
-    translator = Translator(target=lang)
-    po = polib.pofile(po_filepath_in)
+@cli.command(help="Translate *.mo file using gettext")
+def mo(
+    filepath_in: Annotated[str, typer.Argument(help='gettex input filename *.mo for translate')],
+    filepath_out: Annotated[str, typer.Argument(help='gettex output filename *.mo for translation results')],
+    lang: Annotated[str, typer.Argument(help='target translate language')] = 'ru',
+):
+    translate_all.translate_mo(filepath_in, filepath_out, lang)
 
-    bar = PixelBar("Translate", color="green", max=len(po), suffix='%(index)d/%(max)d messages, (%(percent).1f%% - ETA %(eta)ds)')
-    for entry in po:
-        bar.next()
-        entry.msgstr = translate_entry(translator, entry.msgid, entry.msgstr)
-
-    po.metadata["Language"] = lang
-    po.save(po_filepath_out)
-
-    rich.print(f"\n[bold green]Translation finished successfully[/bold green] (saved in \"{po_filepath_out}\")")
+@cli.command(help="Translate *.po to *.mo file using gettext")
+def po_to_mo(
+    filepath_in: Annotated[str, typer.Argument(help='gettex input filename *.po for translate')],
+    filepath_out: Annotated[str, typer.Argument(help='gettex output filename *.mo for translation results')],
+    lang: Annotated[str, typer.Argument(help='target translate language')] = 'ru',
+):
+    translate_all.translate_po_to_mo(filepath_in, filepath_out, lang)
 
 if __name__ == "__main__":
     cli()
